@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ku" dir="rtl">
+<head>
+    <meta name="google-site-verification" content="bWLsSU11pzj71hKhUY4qFQn0XNRK8UuvUK35tRb3BzM" />
+    <meta name="description" content="سیخوڕ (Spy Game) is a fun multiplayer social deduction game in Kurdish. Play with friends online or locally using one phone. Find the spy and win the game!">
+    <meta name="keywords" content="Spy Game, سیخوڕ, Kurdish Game, Multiplayer Game, Online Spy Game, Bawan, Kurd Game, bawanu github,لعبة الجاسوس">
+    <meta name="author" content="Bawan">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="سیخوڕ - Spy Game">
+    <meta property="og:description" content="Play the popular Spy Game in Kurdish. Available online and offline.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://bawanu.github.io/spy-game/">
+    <meta property="og:image" content="https://bawanu.github.io/spy-game/icons/icon-512.png">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/x-icon" href="./icons/favicon.ico">
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>سیخوڕ - Spy Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+
+    <style>
+    /* Language Switcher */
+    .language-switcher {
+        position: fixed;
+        top: calc(15px + env(safe-area-inset-top, 0px));
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        flex-direction: row;
+        gap: 15px;
+        z-index: 1000;
+        align-items: center;
+        width: max-content;
+    }
+    
+    .flag-btn {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        background-size: cover;
+        background-position: center;
+        background-color: transparent;
+        background-clip: padding-box;
+        cursor: pointer;
+        transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        outline: none;
+    }
+    
+    .flag-btn:hover {
+        transform: scale(1.1);
+    }
+    
+    .flag-btn:active {
+        transform: scale(0.95);
+    }
+    
+    .flag-btn.active {
+        border-color: #4ade80;
+        box-shadow: 0 0 10px rgba(74, 222, 128, 0.5);
+    }
+    </style>
+
+</head>
+<body>
+
+    <div class="particles" id="particles"></div>
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <div id="chat-drawer">
+        <div class="chat-header">
+            <button class="icon-btn" onclick="toggleChat()"><i class="fas fa-times"></i></button>
+            <h2 style="margin:0" data-i18n="chat-title">چات</h2>
+            <i class="fas fa-comment-dots" style="color: var(--primary)"></i>
+        </div>
+        <div id="chat-messages"></div>
+        <div class="chat-input-area">
+            <input type="text" id="chat-input" class="main-input" placeholder="نامەیەک بنووسە..." data-i18n-placeholder="chat-placeholder" style="text-align: right;">
+            <button class="add-btn" onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <!-- Hidden audio elements container -->
+    <div id="remote-audio-container" style="display:none"></div>
+
+    <div class="language-switcher">
+        <button class="flag-btn active" data-lang="ku" onclick="setLanguage('ku', this)" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/3/35/Flag_of_Kurdistan.svg');"></button>
+        <button class="flag-btn" data-lang="en" onclick="setLanguage('en', this)" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/a/a4/Flag_of_the_United_States.svg');"></button>
+        <button class="flag-btn" data-lang="ar" onclick="setLanguage('ar', this)" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/f/f6/Flag_of_Iraq.svg');"></button>
+        <button class="flag-btn" data-lang="fa" onclick="setLanguage('fa', this)" style="background-image: url('https://upload.wikimedia.org/wikipedia/commons/c/ca/Flag_of_Iran.svg');"></button>
+    </div>
+
+    <div class="app-wrapper">
+
+
+        <div id="view-mode" class="view active">
+            <div class="scroll-content" style="justify-content: center;">
+                <h1 style="font-size: 2.5rem; margin-bottom: 10px;" data-i18n="app-title">سیخوڕ</h1>
+                <p class="subtitle" data-i18n="app-subtitle">یەکێک لەم شێوازانە هەڵبژێرە</p>
+                <button class="primary-btn" onclick="startLocalMode()">
+                    <span data-i18n="btn-local">یاریکردن بە یەک مۆبایل</span> <i class="fas fa-mobile-alt"></i>
+                </button>
+                <div style="margin: 10px; color: var(--text-muted); font-size: 0.8rem;" data-i18n="or">--- یان ---</div>
+                <button class="primary-btn secondary" onclick="transitionTo('view-lobby-entry')">
+                    <span data-i18n="btn-online">یاریکردن بە ئۆنڵاین</span> <i class="fas fa-wifi"></i>
+                </button>
+                <div style="margin: 10px; color: var(--text-muted); font-size: 0.8rem; display: none;" id="install-divider" data-i18n="or">--- یان ---</div>
+                <button id="install-app-btn" class="primary-btn success" style="display: none; margin-bottom: 40px;" onclick="installApp()">
+                    <span data-i18n="btn-download">دابەزاندن</span> <i class="fas fa-download"></i>
+                </button>
+                <div class="footer">Made by <a href="https://t.me/paperui" target="_blank"> <b>Aland</b> </a></div>
+            </div>
+        </div>
+
+        <div id="view-lobby-entry" class="view">
+            <div class="top-bar">
+                <div class="icon-btn" onclick="transitionTo('view-mode')"><i class="fas fa-arrow-right"></i></div>
+            </div>
+            <div class="scroll-content" style="justify-content: center;">
+                <h2 data-i18n="lobby-title">سەرەتا</h2>
+                <p class="subtitle" data-i18n="lobby-subtitle">زانیاریەکانت پڕبکەرەوە</p>
+                <div class="stacked-inputs">
+                    <input type="text" id="my-name-input" class="main-input" placeholder="ناوەکەت..." data-i18n-placeholder="input-name" style="text-align: center; width: 100%; margin:0;">
+                    <input type="text" id="room-code-input" class="main-input" placeholder="کۆدی ژوور (بۆ دروستکردن یان چوونەژوور)" data-i18n-placeholder="input-room" style="text-align: center; letter-spacing: 2px; width: 100%; margin:0;">
+                </div>
+                <div style="width: 100%; border-top: 1px solid var(--glass-border); margin: 20px 0; max-width: 400px;"></div>
+                <div class="stacked-buttons">
+                    <button class="primary-btn" onclick="createOnlineRoom()" style="width: 100%; margin:0;">
+                        <span data-i18n="btn-create-room">دروستکردنی ژوور (Server)</span> <i class="fas fa-server"></i>
+                    </button>
+                    <button class="primary-btn secondary" onclick="joinOnlineRoom()" style="width: 100%; margin:0;">
+                        <span data-i18n="btn-join-room">چوونە ژوورەوە</span> <i class="fas fa-sign-in-alt"></i>
+                    </button>
+                </div>
+                <p style="margin: 20px 0; font-size: 0.9rem; color: var(--text-muted); text-align: center;" data-i18n="room-hint">ئەگەر بۆ دروستکردنی ژوور کۆد نەنوسیت، بە هەڕەمەکی دروست دەبێت</p>
+                <p style="margin: 20px 0; font-size: 0.9rem; color: red; text-align: center;" data-i18n="wifi-warning">تێبینی: یاری کردن بە ئۆنڵاین لەسەر هێڵی ئینتەرنێتی زانکۆ کار ناکات بەهۆی ئەوە هێڵی زانکۆ Firewall بەکار دێنن و ڕێگری لە یاریەکە دەکات بە ئۆنڵاین کاربکات </p>
+            </div>
+        </div>
+
+        <div id="view-lobby-waiting" class="view">
+            <div class="top-bar">
+                <div class="icon-btn" onclick="universalLeave()" style="background: rgba(244, 63, 94, 0.2); border-color: var(--accent);">
+                    <i class="fas fa-sign-out-alt" style="color: var(--accent);"></i>
+                </div>
+                <div class="center-icons">
+                    <div class="icon-btn mic-trigger" id="mic-btn-lobby" onclick="toggleMic()" style="display:none">
+                        <i class="fas fa-microphone-slash"></i>
+                    </div>
+                    <div class="icon-btn chat-trigger" onclick="toggleChat()" style="display:none">
+                        <i class="fas fa-comment-dots"></i>
+                        <div class="unread-badge">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="scroll-content">
+                <h2 data-i18n="waiting-title">ژووری چاوەڕوانی</h2>
+                <div style="background: var(--glass); padding: 10px 20px; border-radius: 12px; border: 1px solid var(--primary); color: var(--primary); font-weight: bold; font-size: 1.5rem; letter-spacing: 3px; margin-bottom: 20px;" id="display-room-code">...</div>
+                <div class="section-title"><span data-i18n="players-list">یاریزانەکان:</span></div>
+                <div id="lobby-players-list" class="tags-container"></div>
+                <div id="host-controls" style="width: 100%; display: none; flex-direction: column; align-items: center; gap: 10px;">
+                    <p class="subtitle" data-i18n="host-hint">تۆ سێرڤەریت، کەی هەمووان هاتن دەستپێبکە</p>
+                    <button class="primary-btn" onclick="setupOnlineGame()">
+                        <span data-i18n="btn-setup-start">ڕێکخستن و دەستپێکردن</span> <i class="fas fa-cog"></i>
+                    </button>
+                    <button id="btn-lock-room" class="primary-btn danger" onclick="toggleRoomLock()" style="margin-top: 5px;">
+                        <span data-i18n="btn-lock-room" id="lock-room-text">داخستنی ژوور</span> <i class="fas fa-lock"></i>
+                    </button>
+                </div>
+                <div id="client-wait-msg" style="display: none;">
+                    <p class="waiting-message" data-i18n="waiting-host">چاوەڕێی سێرڤەر بە یاریەکە دەستپێبکات...</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-setup" class="view">
+            <div class="top-bar">
+                <div class="left-button-group">
+                    <div class="icon-btn" onclick="toggleHelp()"><i class="fas fa-question"></i></div>
+                    <div class="icon-btn" onclick="toggleHaptics()" id="btn-haptics"><i class="fas fa-mobile-alt"></i></div>
+                </div>
+                <div class="center-icons">
+                </div>
+                <div class="right-button-group">
+                    <div class="icon-btn" onclick="toggleSound()" id="btn-sound"><i class="fas fa-volume-up"></i></div>
+                    <div class="icon-btn" onclick="exitToMainMenu()" id="btn-exit"><i class="fas fa-home"></i></div>
+                    <div class="icon-btn" onclick="backToLobby()" id="btn-back-lobby" style="display:none"><i class="fas fa-arrow-right"></i></div>
+                </div>
+            </div>
+            <div class="scroll-content">
+                <h1 data-i18n="setup-title">یاری سیخوڕەکە</h1>
+                <p class="subtitle shimmer-text" data-i18n="setup-subtitle">کاتی دۆزینەوەی نهێنیەکانە...</p>
+                <div class="section-title" data-i18n="select-topics">بابەت هەڵبژێرە (زیاتر لە یەک دانە ئاساییە):</div>
+                <div class="topics-grid" id="topics-container"></div>
+                <div id="custom-words-container">
+                    <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; font-weight: bold;" data-i18n="custom-words-hint">وشە تایبەتەکانت بنووسە:</div>
+                    <textarea id="custom-words-input" placeholder="نموونە: تۆپی پێ، باڵە، مەلەوانی... &#10;یان بە ENTER جیایان بکەوە" data-i18n-placeholder="custom-words-placeholder"></textarea>
+                    <div style="font-size: 0.75rem; color: rgba(255,255,255,0.4); text-align: left; margin-top:5px;" data-i18n="custom-words-subtext">بە کۆما یان دێڕ جیایان بکەرەوە</div>
+                </div>
+                <div id="player-input-section">
+                    <div class="section-title" data-i18n="players-list-setup">لیستی یاریزانان:</div>
+                    <div class="input-box">
+                        <input type="text" id="player-input" class="main-input" placeholder="ناوی یاریزان..." data-i18n-placeholder="input-player-name" autocomplete="off">
+                        <button class="add-btn" onclick="addPlayer()"><i class="fas fa-plus"></i></button>
+                    </div>
+                </div>
+                <div id="players-container" class="tags-container"></div>
+                <div class="section-title" data-i18n="settings-title">ڕێکخستنەکان:</div>
+                <div class="control-row">
+                    <div class="control-label"><span data-i18n="spy-count-label">ژمارەی سیخوڕەکان</span></div>
+                    <div class="stepper">
+                        <button class="step-btn" id="btn-spy-down" onclick="adjVal('spy-count', -1)">-</button>
+                        <span class="step-val" id="spy-count">1</span>
+                        <button class="step-btn" id="btn-spy-up" onclick="adjVal('spy-count', 1)">+</button>
+                    </div>
+                </div>
+                <div class="control-row">
+                    <div class="control-label"><span data-i18n="time-label">کات (خولەک) ماوەی گفتوگۆ</span></div>
+                    <div class="stepper">
+                        <button class="step-btn" id="btn-time-down" onclick="adjVal('game-time', -1)">-</button>
+                        <span class="step-val" id="game-time">5</span>
+                        <button class="step-btn" id="btn-time-up" onclick="adjVal('game-time', 1)">+</button>
+                    </div>
+                </div>
+                <div class="control-row">
+                    <div class="control-label"><span data-i18n="guess-count-label">ژمارەی هەوڵەکان بۆ دۆزینەوەی سیخوڕ</span></div>
+                    <div class="stepper">
+                        <button class="step-btn" id="btn-guess-down" onclick="adjVal('guess-count', -1)">-</button>
+                        <span class="step-val" id="guess-count">1</span>
+                        <button class="step-btn" id="btn-guess-up" onclick="adjVal('guess-count', 1)">+</button>
+                    </div>
+                </div>
+            </div>
+            <button class="primary-btn" id="start-btn" onclick="initGame()">
+                <span data-i18n="btn-start">دەستپێکردن</span> <i class="fas fa-arrow-left"></i>
+            </button>
+        </div>
+
+        <div id="view-cards" class="view">
+            <div class="top-bar">
+                <div class="icon-btn" onclick="universalLeave()" style="background: rgba(244, 63, 94, 0.2); border-color: var(--accent);">
+                    <i class="fas fa-sign-out-alt" style="color: var(--accent);"></i>
+                </div>
+                <div class="center-icons">
+                    <div class="icon-btn mic-trigger" id="mic-btn-cards" onclick="toggleMic()" style="display:none">
+                        <i class="fas fa-microphone-slash"></i>
+                    </div>
+                    <div class="icon-btn chat-trigger" onclick="toggleChat()" style="display:none">
+                        <i class="fas fa-comment-dots"></i>
+                        <div class="unread-badge">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="top-bar" style="justify-content: center; margin-top:-50px;">
+                <h2 style="margin:0; font-size: 1rem; color:var(--text-muted);" data-i18n="roles-title">ڕۆڵەکان</h2>
+            </div>
+            <div class="scroll-content" style="justify-content: center;">
+                <div style="text-align:center; margin-bottom: 20px;">
+                    <div id="current-player-name" class="shimmer-text" style="font-size: 1.4rem; font-weight: bold; margin-bottom: 5px;">Yarizan</div>
+                    <div id="card-instruction" style="font-size: 0.8rem; color: var(--text-muted);" data-i18n="card-instruction">مۆبایلەکە بدە دەست ئەم کەسە</div>
+                </div>
+                <div class="card-wrapper">
+                    <div class="game-card" id="the-card" onclick="flipCard()">
+                        <div class="card-face face-front">
+                            <i class="fas fa-fingerprint fingerprint"></i>
+                            <div class="tap-text shimmer-text" data-i18n="click-to-flip">کلیـک بـکە</div>
+                        </div>
+                        <div class="card-face face-back" id="card-back">
+                            <div class="role-badge" id="card-role">...</div>
+                            <div class="secret-word" id="card-word">...</div>
+                            <p id="card-desc" style="color:inherit; opacity: 0.7; font-size:0.9rem; margin-top: 10px; padding: 0 10px;">...</p>
+                            <div style="position:absolute; bottom:20px; opacity:0.4; font-size: 0.75rem;" data-i18n="click-to-hide">دووبارە کلیک بکە بۆ شاردنەوە</div>
+                        </div>
+                    </div>
+                </div>
+                <div id="waiting-others-msg" class="waiting-message" style="display: none; font-size: 1rem;">
+                    چاوەڕێی یاریزانەکانی تر بە کارتەکانیان ببینن...
+                </div>
+            </div>
+        </div>
+
+        <div id="view-starter" class="view" style="justify-content: center;">
+            <div class="starter-box">
+                <p style="color: var(--text-muted); margin-bottom: 15px;" data-i18n="first-question">پسیاری یەکەم دەکات:</p>
+                <div class="starter-avatar"><i class="fas fa-crown"></i></div>
+                <h2 id="starter-name-display" style="font-size: 2rem; color: #fff; margin: 0;">...</h2>
+                <br>
+                <button class="primary-btn" style="padding: 12px 30px;" onclick="startTimerView()"><span data-i18n="btn-ok">باشە</span></button>
+            </div>
+        </div>
+
+        <div id="view-timer" class="view">
+            <div class="top-bar">
+                <div class="icon-btn" onclick="universalLeave()" style="background: rgba(244, 63, 94, 0.2); border-color: var(--accent);">
+                    <i class="fas fa-sign-out-alt" style="color: var(--accent);"></i>
+                </div>
+                <h2 style="margin:0; flex:1; text-align:center; padding-left:40px;" data-i18n="time-left-title">کات ماوە</h2>
+                <div class="center-icons">
+                    <div class="icon-btn mic-trigger" id="mic-btn-timer" onclick="toggleMic()" style="display:none">
+                        <i class="fas fa-microphone-slash"></i>
+                    </div>
+                    <div class="icon-btn chat-trigger" onclick="toggleChat()" style="display:none">
+                        <i class="fas fa-comment-dots"></i>
+                        <div class="unread-badge">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="scroll-content" style="justify-content: center;">
+                <div class="timer-ring" id="timer-ring">
+                    <div class="time-text shimmer-text" id="timer-val">00:00</div>
+                </div>
+                <p class="subtitle" style="text-align: center;" data-i18n="timer-hint">پرسیار لە یەکتری بکەن بەبێ ئەوەی نهێنییەکە ئاشکرا بکەن!</p>
+                <div id="host-timer-controls">
+                    <button class="icon-btn" style="width: 60px; height: 60px; border-radius: 50%; background: rgba(255,255,255,0.1); margin-bottom: 10px;" onclick="togglePause()">
+                        <i class="fas fa-pause" id="pause-icon"></i>
+                    </button>
+                    <button class="primary-btn" style="background: var(--accent); max-width: 200px;" onclick="endGame()">
+                        <span data-i18n="btn-end-game">کۆتایی هێنان</span> <i class="fas fa-gavel"></i>
+                    </button>
+                </div>
+                <div id="client-timer-msg" style="display: none; color: var(--text-muted); font-size: 0.8rem;">
+                    تەنها سێرڤەر دەتوانێت کات کۆنتڕۆڵ بکات
+                </div>
+            </div>
+        </div>
+
+        <div id="view-results" class="view">
+            <div class="top-bar">
+                <div class="icon-btn" onclick="universalLeave()" style="background: rgba(244, 63, 94, 0.2); border-color: var(--accent);">
+                    <i class="fas fa-sign-out-alt" style="color: var(--accent);"></i>
+                </div>
+                <div class="center-icons">
+                    <div class="icon-btn mic-trigger" id="mic-btn-results" onclick="toggleMic()" style="display:none">
+                        <i class="fas fa-microphone-slash"></i>
+                    </div>
+                    <div class="icon-btn chat-trigger" onclick="toggleChat()" style="display:none">
+                        <i class="fas fa-comment-dots"></i>
+                        <div class="unread-badge">0</div>
+                    </div>
+                </div>
+            </div>
+            <div class="scroll-content" style="align-items: stretch; justify-content: start;">
+                <div id="phase-voting" class="result-phase-container">
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <i class="fas fa-search" style="font-size: 3rem; color: var(--primary); margin-bottom: 10px;"></i>
+                        <h2 style="font-size: 1.5rem;" data-i18n="who-is-spy">سیخوڕەکە کێیە؟</h2>
+                        <p class="subtitle" style="margin-bottom: 10px;" data-i18n="vote-hint">گومانلێکراو هەڵبژێرە و دەنگ بدە</p>
+                    </div>
+                    <div id="attempts-display" class="attempts-display">
+                        <i class="fas fa-bullseye"></i> <span id="attempts-count">0</span> <span data-i18n="attempts-left">هەوڵ ماوە</span>
+                    </div>
+                    <div id="voting-status" class="status-box" data-i18n="pls-vote">تکایە هەمووان دەنگ بدەن</div>
+                    <div id="suspects-grid" class="topics-grid"></div>
+                    <button id="btn-confirm-vote" class="primary-btn" onclick="confirmVote()" style="display: none; margin-top: 20px;">
+                        <span data-i18n="btn-send-vote">ناردنی دەنگ</span> <i class="fas fa-vote-yea"></i>
+                    </button>
+                    <button id="btn-force-end" class="primary-btn danger" onclick="hostSkipVoting()" style="display: none; margin-top: 20px; animation: none;">
+                        <span data-i18n="btn-force-end">کۆتایی هێنان و ئاشکراکردن</span> <i class="fas fa-eye"></i>
+                    </button>
+                    <button id="btn-reveal-all" class="primary-btn" style="background: rgba(255,255,255,0.1); margin-top: 20px; font-size: 0.9rem;" onclick="revealEverything('neutral')">
+                        <span data-i18n="btn-reveal-all">هەموویان ئاشکرا بکە</span>
+                    </button>
+                    <div id="client-reveal-msg" style="display:none; text-align:center; margin-top:10px; opacity:0.6; font-size: 0.9rem;">
+                        چاوەڕێی دەنگی ئەوانی تر بە...
+                    </div>
+                </div>
+                <div id="phase-post-reveal" class="result-phase-container" style="display: none;">
+                    <div id="winner-display" class="winner-header"></div>
+                    <div class="results-card">
+                        <div style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 10px;" data-i18n="word-was">وشەکە ئەمە بوو:</div>
+                        <div id="result-word" style="font-size: 1.8rem; font-weight: 900; color: #fff; text-align: center; margin-bottom: 20px; background:rgba(0,0,0,0.3); padding:10px; border-radius:10px; border: 1px solid var(--primary); box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);">-</div>
+                        <div style="font-size: 0.9rem; color: var(--accent); font-weight: bold;" data-i18n="spies-were">سیخوڕەکان:</div>
+                        <div id="spies-list"></div>
+                    </div>
+                    <button class="primary-btn" onclick="resetGameToLobby()"><span data-i18n="btn-play-again">یاری نوێ (هەمان گروپ)</span> <i class="fas fa-redo"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="help-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" onclick="toggleHelp()"><i class="fas fa-times"></i></button>
+            <h2 data-i18n="help-title">چۆنیەتی یاریکردن</h2>
+            <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.6; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+                <span data-i18n="help-desc">یاری سیخوڕ (Spy Game) یارییەکی بە کۆمەڵە کە دەتوانن لەگەڵ هاوڕێکانتان یاری بکەن. دەتوانن بە شێوازی ئۆنلاین یان بە یەک مۆبایل (Offline) یاری بکەن. ئەم یارییە بە زمانی کوردی دروستکراوە.</span>
+            </div>
+            <div class="rule-item">
+                <div class="rule-icon"><i class="fas fa-user"></i></div>
+                <div><b data-i18n="help-citizen">هاوڵاتی</b><div style="font-size: 0.8rem; color: #aaa;"><span data-i18n="help-citizen-desc">وشەکەی دەزانێت. دەبێت پرسیار بکات بۆ دۆزینەوەی سیخوڕەکە.</span></div></div>
+            </div>
+            <div class="rule-item">
+                <div class="rule-icon"><i class="fas fa-user-secret"></i></div>
+                <div><b data-i18n="help-spy">سیخوڕ</b><div style="font-size: 0.8rem; color: #aaa;"><span data-i18n="help-spy-desc">وشەکە نازانێت. دەبێت خۆی وەک هاوڵاتی دەربخات.</span></div></div>
+            </div>
+            <div class="rule-item">
+                <div class="rule-icon"><i class="fas fa-trophy"></i></div>
+                <div><b data-i18n="help-win">بردنەوە</b><div style="font-size: 0.8rem; color: #aaa;"><span data-i18n="help-win-desc">هاوڵاتیان دەیبەنەوە ئەگەر سیخوڕ بدۆزنەوە. سیخوڕ دەیباتەوە ئەگەر بمێنێتەوە یان وشەکە بزانێت.</span></div></div>
+            </div>
+            <div style="margin-top: 20px; text-align: center; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                <div style="margin-bottom: 10px;"><b data-i18n="feedback-title">Feedback</b></div>
+                <div style="font-size: 0.8rem; color: #aaa; margin-bottom: 10px;" data-i18n="feedback-desc">بۆ هەر ڕەخنەو تێبینیەک پەیوەندیم پێوە بکەن بە خۆشحاڵیەوە گوێتان لێ دەگرم❤️</div>
+                <div class="social-container">
+                    <a href="@alandidris" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" width="30"/></a>
+                    <a href="mailto:alandidris0771@gmail.com?subject=Feedback" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/7/7e/Gmail_icon_%282020%29.svg" width="30"/></a>
+                </div>
+            </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- iOS Install Manual Modal -->
+    <div id="ios-install-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeIOSModal()"><i class="fas fa-times"></i></button>
+            <h2 data-i18n="ios-install-title">دابەزاندن بۆ iOS</h2>
+            <div style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.8;">
+                <p data-i18n="ios-install-step1">١. لە وێبگەڕی Safari کلیک لە دوگمەی <b>Share</b> <i class="fas fa-share-square"></i> بکە.</p>
+                <p data-i18n="ios-install-step2">٢. بگەڕێ بۆ خوارەوە و کلیک لە <b>Add to Home Screen</b> <i class="fas fa-plus-square"></i> بکە.</p>
+                <p data-i18n="ios-install-step3">٣. دڵنیابە لەوەی <b>Open as Web App</b> هەڵکراوە، پاشان کلیک لە <b>Add</b> بکە.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="translations.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
